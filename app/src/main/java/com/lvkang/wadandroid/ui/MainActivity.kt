@@ -3,6 +3,7 @@
 package com.lvkang.wadandroid.ui
 
 
+import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
@@ -23,6 +24,7 @@ import com.lvkang.wadandroid.ui.main.MainCompose
 
 
 class MainActivity : BaseComponentActivity() {
+
 
     private val mainBottomState by lazy {
         mutableStateOf(0)
@@ -64,7 +66,7 @@ class MainActivity : BaseComponentActivity() {
                 MainCompose(navController = navController, mainBottomState)
             }
             composable(Routers.HOME_DETAIL.name) {
-                HomeDetail()
+
             }
         }
 

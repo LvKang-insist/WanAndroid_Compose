@@ -26,7 +26,7 @@ fun MainCompose(navController: NavHostController, mainBottomState: MutableState<
         }
     ) {
         when (mainBottomState.value) {
-            0 -> HomeCompos(navController)
+            0 -> HomeCompose(navController)
             1 -> ProjectFragment()
             2 -> FLFragment()
             else -> UserFragment()
@@ -59,8 +59,8 @@ private fun BottomBar(mainBottomState: MutableState<Int>) {
                         name = navigationItem.name
                     )
                 },
-                selectedContentColor = Color.White,
-                unselectedContentColor = Color.Black
+//                selectedContentColor = Color.White,
+//                unselectedContentColor = Color.Black
             )
         }
     }

@@ -1,21 +1,35 @@
 package com.lvkang.wadandroid.ui.home
 
-import android.annotation.SuppressLint
 import android.util.Log
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.rememberScaffoldState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.dp
+
 import androidx.navigation.NavHostController
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemsIndexed
+import coil.annotation.ExperimentalCoilApi
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import com.lvkang.wadandroid.bean.ArticleListBean
+import com.lvkang.wadandroid.bean.BannerListBean
+import com.lvkang.wadandroid.composable.Banner
 import com.lvkang.wadandroid.composable.SetScaffold
-import com.lvkang.wadandroid.core.app.Routers
+import com.lvkang.wadandroid.ui.home.viewmodel.HomeViewModel
+import kotlinx.coroutines.delay
 
 /**
  * @name HomeFragment
@@ -25,56 +39,106 @@ import com.lvkang.wadandroid.core.app.Routers
  * @description
  */
 
+
 @Composable
-fun HomeCompos(navController: NavHostController) {
-
-
+fun HomeCompose(
+    navController: NavHostController,
+    viewModel: HomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
     SetScaffold(title = "首页") {
-        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Top) {
-            Button(onClick = {
-                navController.navigate(Routers.HOME_DETAIL.name) {
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            }) {
-                Text(text = "12345", fontSize = 50.sp)
-            }
-            Text(text = "12345", fontSize = 50.sp)
-            Text(text = "12345", fontSize = 50.sp)
-            Log.e("---345--->", "-----------首页");
+        val refreshState = rememberSwipeRefreshState(isRefreshing = true)
+        val bannerState = viewModel.banner.observeAsState()
+        val pagingItems = viewModel.projects.collectAsLazyPagingItems()
+        if (pagingItems.itemCount > 0) {
+            refreshState.isRefreshing = false
+        }
+        if (bannerState.value == null) viewModel.banner()
+        SwipeRefresh(state = refreshState, onRefresh = {
+            refreshState.isRefreshing = true
+            viewModel.banner()
+            pagingItems.refresh()
+        }) {
+            HomeList(list = pagingItems, bannerState.value)
         }
     }
 }
 
-
-@SuppressLint("UnusedMaterialScaffoldPaddingParameter")
+@OptIn(ExperimentalCoilApi::class)
 @Composable
-fun HomeDetail() {
-    LaunchedEffect(Unit) {
-        Log.e("---345--->", "LaunchedEffect");
-    }
-
-    val state  = rememberScaffoldState();
-
-
-    Scaffold(scaffoldState = state) {
-
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            Log.e("---345--->", "DisposableEffect")
+fun HomeList(list: LazyPagingItems<ArticleListBean.Data>, bannerListData: BannerListBean?) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        item {
+            //轮播图
+            Banner(bannerListData)
+        }
+        itemsIndexed(list) { _, data ->
+            if (data == null) return@itemsIndexed
+            Card(
+                backgroundColor = MaterialTheme.colors.background,
+                modifier = Modifier.padding(horizontal = 12.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colors.primary),
+                elevation = 5.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        if (data.fresh) {
+                            Text(
+                                text = "新",
+                                style = MaterialTheme.typography.subtitle2.merge(TextStyle(Color.White)),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(MaterialTheme.colors.primary)
+                                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(text = "作者:", style = MaterialTheme.typography.subtitle2)
+                        Text(
+                            text = data.author.ifBlank { "未知" },
+                            style = MaterialTheme.typography.subtitle2
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "分类:", style = MaterialTheme.typography.subtitle2)
+                        Text(
+                            text = data.superChapterName.ifBlank { "官方" },
+                            style = MaterialTheme.typography.subtitle2
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = data.title,
+                        style = MaterialTheme.typography.h5,
+                        maxLines = 2
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = data.niceDate, style = MaterialTheme.typography.subtitle2)
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+        }
+        when (list.loadState.append) {
+            is LoadState.Loading -> {
+                item {
+                    Text(text = "加载中....")
+                }
+            }
+            is LoadState.Error -> {
+                item {
+                    Text(text = "加载失败")
+                }
+            }
         }
     }
-
-    SideEffect {
-        Log.e("---345--->", "SideEffect");
-    }
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
-        Text(text = "12345", fontSize = 50.sp)
-        Text(text = "12345", fontSize = 50.sp)
-    }
 }
+
 
 @Composable
 fun ProjectFragment() {

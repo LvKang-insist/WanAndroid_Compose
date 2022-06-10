@@ -4,11 +4,13 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 
 /**
  * @name Scaffold
@@ -58,6 +60,7 @@ inline fun SetScaffold(
     noinline bottomBar: @Composable () -> Unit = {},
     noinline actions: @Composable RowScope.() -> Unit = {},
     noinline back: (() -> Unit)? = null,
+    background: Color? = null,
     crossinline content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
@@ -71,6 +74,7 @@ inline fun SetScaffold(
                 )
             }
         },
+        backgroundColor = background ?: MaterialTheme.colors.onBackground,
         bottomBar = bottomBar,
     ) {
         Box(
